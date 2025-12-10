@@ -1,7 +1,0 @@
-{
-  "name": "Copy of Copy of Tsinglan Shop",
-  "description": "A modern, iOS-styled school procurement and inventory management system. Features clean interfaces, automatic approval workflows, and AI assistance.",
-  "requestFramePermissions": [
-    "microphone"
-  ]
-}

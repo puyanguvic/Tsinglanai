@@ -1,0 +1,11 @@
+@import './variables.scss';
+
+page {
+  background: $background;
+  color: $text;
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Segoe UI', Arial, sans-serif;
+}
+
+.page {
+  padding: 16px;
+}

@@ -1,23 +1,21 @@
 {
-  "name": "copy-of-copy-of-tsinglan-shop",
+  "name": "tsinglan-school",
+  "version": "0.1.0",
   "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+  "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=18"
   },
-  "dependencies": {
-    "@google/genai": "^1.30.0",
-    "react-dom": "^19.2.0",
-    "react": "^19.2.0",
-    "recharts": "^3.5.0"
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test -- --runInBand",
+    "format": "prettier --write \"{apps,packages,infra,docs}/**/*.{ts,tsx,js,jsx,json,md,scss}\""
   },
   "devDependencies": {
-    "@types/node": "^22.14.0",
-    "@vitejs/plugin-react": "^5.0.0",
-    "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "eslint": "^8.57.1",
+    "prettier": "^3.3.3",
+    "typescript": "^5.4.0"
   }
 }

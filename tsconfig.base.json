@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "ES2021",
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@tsinglan/shared-types": ["packages/shared-types/src"],
+      "@tsinglan/shared-types/*": ["packages/shared-types/src/*"],
+      "@tsinglan/shared-api-client": ["packages/shared-api-client/src"],
+      "@tsinglan/shared-api-client/*": ["packages/shared-api-client/src/*"]
+    }
+  }
+}

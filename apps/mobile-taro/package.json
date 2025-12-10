@@ -1,0 +1,31 @@
+{
+  "name": "@tsinglan/mobile-taro",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev:h5": "taro dev --type h5",
+    "dev:weapp": "taro dev --type weapp",
+    "build:h5": "taro build --type h5",
+    "build:weapp": "taro build --type weapp",
+    "lint": "eslint ./src --ext .ts,.tsx"
+  },
+  "dependencies": {
+    "@tarojs/components": "^4.0.7",
+    "@tarojs/helper": "^4.0.7",
+    "@tarojs/runtime": "^4.0.7",
+    "@tarojs/taro": "^4.0.7",
+    "@tarojs/router": "^4.0.7",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zustand": "^5.0.0",
+    "@tsinglan/shared-api-client": "workspace:*",
+    "@tsinglan/shared-types": "workspace:*"
+  },
+  "devDependencies": {
+    "@tarojs/cli": "^4.0.7",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "eslint": "^8.57.1",
+    "typescript": "^5.4.0"
+  }
+}
