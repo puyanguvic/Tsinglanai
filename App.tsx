@@ -6,8 +6,8 @@
 
 
 import React, { useState, useRef, useMemo, useEffect } from 'react';
-import { INITIAL_INVENTORY, INITIAL_REQUESTS, APPROVAL_LIMITS, CLASSES, INITIAL_EVENTS, INITIAL_CLASS_CONSUMPTION, TRACKED_ITEMS, NON_TEACHING_DEPTS, INITIAL_NOTIFICATIONS, INITIAL_TEACHERS, INITIAL_STUDENTS, INITIAL_FIXED_ASSETS, INITIAL_VENUES, INITIAL_WEEKLY_REPORT } from './constants';
-import { InventoryItem, PurchaseRequest, RequestStatus, Role, ChartData, CalendarEvent, ClassConsumption, Notification, Teacher, Student, FixedAsset, AnnualSpend, Contract, SchoolFile, TrashItem, TrashType, Venue, WeeklyReport, TeacherStatus, StudentStatus, AttendanceRecord } from './types';
+import { INITIAL_INVENTORY, INITIAL_REQUESTS, APPROVAL_LIMITS, CLASSES, INITIAL_EVENTS, INITIAL_CLASS_CONSUMPTION, TRACKED_ITEMS, NON_TEACHING_DEPTS, INITIAL_NOTIFICATIONS, INITIAL_TEACHERS, INITIAL_STUDENTS, INITIAL_FIXED_ASSETS, INITIAL_VENUES, INITIAL_WEEKLY_REPORT } from '@shared/constants';
+import { InventoryItem, PurchaseRequest, RequestStatus, Role, ChartData, CalendarEvent, ClassConsumption, Notification, Teacher, Student, FixedAsset, AnnualSpend, Contract, SchoolFile, TrashItem, TrashType, Venue, WeeklyReport, TeacherStatus, StudentStatus, AttendanceRecord } from '@shared/types';
 import Layout from './components/Layout';
 import CyberCard from './components/CyberCard';
 import InventoryView from './components/InventoryView';
@@ -29,8 +29,8 @@ import SchoolArchives from './components/SchoolArchives';
 import RecycleBin from './components/RecycleBin';
 import WeeklyNewsletter from './components/WeeklyNewsletter'; 
 import AttendanceModal from './components/AttendanceModal'; // Import
-import { mockScanInvoice, analyzeMeetingMinutes } from './services/geminiService';
-import { supabase } from './services/supabaseClient';
+import { mockScanInvoice, analyzeMeetingMinutes } from '@shared/services/geminiService';
+import { apiClient } from '@shared/services/apiClient';
 
 const DEPT_DATA: ChartData[] = [
   { name: 'Arts', value: 2400 },
@@ -146,95 +146,89 @@ function App() {
     const loadSupabaseData = async () => {
         try {
             // Inventory
-            const { data: invData, error: invError } = await supabase.from('inventory').select('*');
+            const invData = await apiClient.inventory.list();
             if (invData && invData.length > 0) {
-                setInventory(invData);
-            } else if (!invError) {
-                // If empty, seed initial
-                await supabase.from('inventory').insert(INITIAL_INVENTORY);
+                setInventory(invData as InventoryItem[]);
+            } else {
+                await apiClient.inventory.create(INITIAL_INVENTORY);
             }
 
             // Requests
-            const { data: reqData, error: reqError } = await supabase.from('requests').select('*');
+            const reqData = await apiClient.requests.list();
             if (reqData && reqData.length > 0) {
-                setRequests(reqData);
-            } else if (!reqError) {
-                await supabase.from('requests').insert(INITIAL_REQUESTS);
+                setRequests(reqData as PurchaseRequest[]);
+            } else {
+                await apiClient.requests.create(INITIAL_REQUESTS);
             }
 
             // Teachers
-            const { data: tchData, error: tchError } = await supabase.from('teachers').select('*');
+            const tchData = await apiClient.teachers.list();
             if (tchData && tchData.length > 0) {
-                setTeachers(tchData);
-            } else if (!tchError) {
-                await supabase.from('teachers').insert(INITIAL_TEACHERS);
+                setTeachers(tchData as Teacher[]);
+            } else {
+                await apiClient.teachers.create(INITIAL_TEACHERS);
             }
 
             // Students
-            const { data: stuData, error: stuError } = await supabase.from('students').select('*');
+            const stuData = await apiClient.students.list();
             if (stuData && stuData.length > 0) {
-                setStudents(stuData);
-            } else if (!stuError) {
-                await supabase.from('students').insert(INITIAL_STUDENTS);
+                setStudents(stuData as Student[]);
+            } else {
+                await apiClient.students.create(INITIAL_STUDENTS);
             }
 
             // Fixed Assets
-            const { data: astData, error: astError } = await supabase.from('fixed_assets').select('*');
+            const astData = await apiClient.fixedAssets.list();
             if (astData && astData.length > 0) {
-                setFixedAssets(astData);
-            } else if (!astError) {
-                await supabase.from('fixed_assets').insert(INITIAL_FIXED_ASSETS);
+                setFixedAssets(astData as FixedAsset[]);
+            } else {
+                await apiClient.fixedAssets.create(INITIAL_FIXED_ASSETS);
             }
 
             // Calendar Events
-            const { data: evtData, error: evtError } = await supabase.from('calendar_events').select('*');
+            const evtData = await apiClient.calendar.list();
             if (evtData && evtData.length > 0) {
-                setEvents(evtData);
+                setEvents(evtData as CalendarEvent[]);
             }
 
             // Attendance Logs (New table assumption or local)
-            const { data: attData } = await supabase.from('attendance_logs').select('*');
-            if (attData && attData.length > 0) setAttendanceLogs(attData);
+            const attData = await apiClient.attendance.list();
+            if (attData && attData.length > 0) setAttendanceLogs(attData as AttendanceRecord[]);
 
             // Class Consumption
-            const { data: consData, error: consError } = await supabase.from('consumptions').select('*');
+            const consData = await apiClient.consumptions.list();
             if (consData && consData.length > 0) {
-                // Map DB columns to type if necessary, assuming 1:1 for now
-                setClassConsumption(consData);
-            } else if (!consError) {
-                await supabase.from('consumptions').insert(INITIAL_CLASS_CONSUMPTION);
+                setClassConsumption(consData as ClassConsumption[]);
+            } else {
+                await apiClient.consumptions.create(INITIAL_CLASS_CONSUMPTION);
             }
 
             // Notifications
-            const { data: notifData, error: notifError } = await supabase.from('notifications').select('*');
+            const notifData = await apiClient.notifications.list();
             if (notifData && notifData.length > 0) {
-                setNotifications(notifData);
+                setNotifications(notifData as Notification[]);
             }
             
             // Weekly Report
-             const { data: reportData, error: reportError } = await supabase.from('weekly_report').select('*').single();
-            if (reportData) {
-                setWeeklyReport(reportData);
-            } else if (!reportError) {
-                // If table exists but empty, insert initial
-                // If table doesn't exist, this fails silently and we use local state
-                // await supabase.from('weekly_report').insert(INITIAL_WEEKLY_REPORT);
+            const reportList = await apiClient.weeklyReport.list();
+            if (Array.isArray(reportList) && reportList.length > 0) {
+                setWeeklyReport(reportList[0] as WeeklyReport);
             }
 
             // Contracts
-            const { data: contData, error: contError } = await supabase.from('contracts').select('*');
-            if (contData && contData.length > 0) setContracts(contData);
+            const contData = await apiClient.contracts.list();
+            if (contData && contData.length > 0) setContracts(contData as Contract[]);
 
             // Files
-            const { data: fileData, error: fileError } = await supabase.from('school_files').select('*');
-            if (fileData && fileData.length > 0) setArchiveFiles(fileData);
+            const fileData = await apiClient.files.list();
+            if (fileData && fileData.length > 0) setArchiveFiles(fileData as SchoolFile[]);
 
             // Trash
-            const { data: trashData, error: trashError } = await supabase.from('recycle_bin').select('*');
-            if (trashData && trashData.length > 0) setTrashItems(trashData);
+            const trashData = await apiClient.recycleBin.list();
+            if (trashData && trashData.length > 0) setTrashItems(trashData as TrashItem[]);
 
         } catch (e) {
-            console.error("Supabase load error", e);
+            console.error("API load error", e);
             showToast("Failed to load data from server. Using local mode.", "error");
         }
     };
@@ -520,11 +514,25 @@ function App() {
       setTimeout(() => setToast(null), 3000);
   };
 
-  const handleAppLogin = (e?: React.FormEvent) => {
+  const handleAppLogin = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    // Use State variable instead of hardcoded string
+    // Remote-first auth; fallback to local password for dev/offline.
+    try {
+        const res = await apiClient.auth.login({ username: 'app', password: loginPassword });
+        const nextRole = res.role && res.role.toUpperCase() === 'ADMIN' ? Role.ADMIN : Role.TEACHER;
+        setIsAuthenticated(true);
+        setRole(nextRole);
+        setActiveTab('dashboard');
+        showToast('Welcome to Tsinglan Flow (API)', 'success');
+        return;
+    } catch (err) {
+        console.warn('API login failed, falling back to local password', err);
+    }
+
     if (loginPassword === appAccessPassword) {
       setIsAuthenticated(true);
+      setRole(Role.TEACHER);
+      setActiveTab('dashboard');
       showToast('Welcome to Tsinglan Flow', 'success');
     } else {
       showToast('Incorrect Password', 'error');
@@ -542,7 +550,25 @@ function App() {
     }
   };
 
-  const handleAdminLogin = () => {
+  const handleAdminLogin = async () => {
+      // Remote-first auth; fallback to local password for dev/offline.
+      try {
+          const res = await apiClient.auth.login({ username: 'admin', password: adminPasswordInput });
+          const apiRole = res.role ? res.role.toUpperCase() : '';
+          if (apiRole !== 'ADMIN') {
+              throw new Error('Not authorized as admin');
+          }
+          setIsAuthenticated(true);
+          setRole(Role.ADMIN);
+          setActiveTab('dashboard');
+          setShowAdminLogin(false);
+          setAdminPasswordInput('');
+          showToast('Welcome, Administrator (API)', 'success');
+          return;
+      } catch (err) {
+          console.warn('API admin login failed, falling back to local password', err);
+      }
+
       // Use State variable instead of hardcoded string
       if (adminPasswordInput === adminAccessPassword) {
           setRole(Role.ADMIN);
@@ -652,14 +678,14 @@ function App() {
             requestType: 'PURCHASE'
         };
         // Save Request to Supabase
-        await supabase.from('requests').insert(newRequest);
+        await apiClient.requests.create(newRequest);
         setRequests(prev => [newRequest, ...prev]);
         showToast('Value > 1000¥. Submitted for Approval.', 'success');
         
         // If it was a NEW item creation, we might want to add it to inventory with 0 qty first?
         if (existingIndex === -1) {
              const initItem = { ...updatedItem, quantity: 0, image: updatedItem.image || 'https://picsum.photos/200/200?random=new' };
-             await supabase.from('inventory').upsert(initItem);
+             await apiClient.inventory.upsert(initItem);
              setInventory(prev => [...prev, initItem]);
         }
     } else {
@@ -682,7 +708,7 @@ function App() {
                 requestType: 'PURCHASE',
                 vendor: updatedItem.supplier
             };
-            await supabase.from('requests').insert(manualRequest);
+            await apiClient.requests.create(manualRequest);
             setRequests(prev => [manualRequest, ...prev]);
         }
 
@@ -690,7 +716,7 @@ function App() {
             ? updatedItem 
             : { ...updatedItem, image: updatedItem.image || 'https://picsum.photos/200/200?random=new' };
 
-        await supabase.from('inventory').upsert(finalItem);
+        await apiClient.inventory.upsert(finalItem);
         setInventory(prev => {
             if (existingIndex > -1) {
                 return prev.map(item => item.id === updatedItem.id ? updatedItem : item);
@@ -705,7 +731,7 @@ function App() {
   };
 
   const handleSaveTeacher = async (teacher: Teacher) => {
-      await supabase.from('teachers').upsert(teacher);
+      await apiClient.teachers.upsert(teacher);
       setTeachers(prev => {
           const exists = prev.find(t => t.id === teacher.id);
           if (exists) {
@@ -717,7 +743,7 @@ function App() {
   };
 
   const handleSaveStudent = async (student: Student) => {
-      await supabase.from('students').upsert(student);
+      await apiClient.students.upsert(student);
       setStudents(prev => {
           const exists = prev.find(s => s.id === student.id);
           if (exists) {
@@ -729,7 +755,7 @@ function App() {
   };
   
   const handleSaveFixedAsset = async (asset: FixedAsset) => {
-      await supabase.from('fixed_assets').upsert(asset);
+      await apiClient.fixedAssets.upsert(asset);
       setFixedAssets(prev => {
           const exists = prev.find(a => a.id === asset.id);
           if (exists) {
@@ -741,8 +767,7 @@ function App() {
   };
   
   const handleSaveVenue = async (venue: Venue) => {
-      // Assuming we'd upsert to a venues table, simulating here
-      // await supabase.from('venues').upsert(venue);
+      // Assuming we'd upsert to a venues table, simulating here (replace with apiClient.venues.upsert when backend ready)
       setVenues(prev => {
           const exists = prev.find(v => v.id === venue.id);
           if (exists) {
@@ -754,13 +779,13 @@ function App() {
   }
   
   const handleDeleteVenue = async (id: string) => {
-      // await supabase.from('venues').delete().match({ id });
+      // await apiClient.venues.remove({ id }); // replace when backend ready
       setVenues(prev => prev.filter(v => v.id !== id));
       showToast('Venue Deleted', 'success');
   }
   
   const handleSaveWeeklyReport = async (report: WeeklyReport) => {
-      await supabase.from('weekly_report').upsert(report);
+      await apiClient.weeklyReport.upsert(report);
       setWeeklyReport(report);
       showToast('Weekly Newsletter Updated');
   }
@@ -805,7 +830,7 @@ function App() {
           scrapImage: formData.scrapImage
       };
 
-      await supabase.from('requests').insert(newRequest);
+      await apiClient.requests.create(newRequest);
       setRequests(prev => [newRequest, ...prev]);
 
       showToast(`Application Successful! Sent to Pending.`, 'success');
@@ -830,7 +855,7 @@ function App() {
           scrapReason: reason,
           scrapImage: image
       };
-      await supabase.from('requests').insert(newRequest);
+      await apiClient.requests.create(newRequest);
       setRequests(prev => [newRequest, ...prev]);
       showToast('Report submitted for approval', 'success');
   };
@@ -847,7 +872,7 @@ function App() {
              purchaseDate: new Date().toISOString().split('T')[0],
              image: 'https://picsum.photos/200/200?random=fa'
          };
-         await supabase.from('fixed_assets').insert(newAsset);
+         await apiClient.fixedAssets.create(newAsset);
          setFixedAssets(prev => [...prev, newAsset]);
          return;
      }
@@ -857,39 +882,39 @@ function App() {
      const existing = inventory.find(i => i.name.toLowerCase() === req.itemName.toLowerCase());
      
      if (existing) {
-         const updated = { ...existing, quantity: existing.quantity + req.quantity };
-         await supabase.from('inventory').upsert(updated);
-         setInventory(prev => prev.map(i => i.id === existing.id ? updated : i));
-     } else {
-         const newItem = {
-             id: `AUTO-${Date.now()}`,
-             name: req.itemName,
+        const updated = { ...existing, quantity: existing.quantity + req.quantity };
+        await apiClient.inventory.upsert(updated);
+        setInventory(prev => prev.map(i => i.id === existing.id ? updated : i));
+    } else {
+        const newItem = {
+            id: `AUTO-${Date.now()}`,
+            name: req.itemName,
              category: 'New Procurement',
              quantity: req.quantity,
              unit: 'units',
              price: req.unitPrice,
              minThreshold: 5,
              image: 'https://picsum.photos/200/200?grayscale',
-             description: req.purpose,
-             supplier: req.vendor,
-             stockLogs: []
-         };
-         await supabase.from('inventory').insert(newItem);
-         setInventory(prev => [...prev, newItem]);
-     }
-  };
+            description: req.purpose,
+            supplier: req.vendor,
+            stockLogs: []
+        };
+        await apiClient.inventory.create(newItem);
+        setInventory(prev => [...prev, newItem]);
+    }
+ };
 
   // Helper to commit approval with optional location override for transfers
   const performApproval = async (req: PurchaseRequest, newLocation?: string) => {
       const updatedReq = { ...req, status: RequestStatus.APPROVED };
-      await supabase.from('requests').upsert(updatedReq);
+      await apiClient.requests.upsert(updatedReq);
       setRequests(prev => prev.map(r => r.id === req.id ? updatedReq : r));
       
       if (req.requestType === 'TRANSFER' && req.fixedAssetId && newLocation) {
           const asset = fixedAssets.find(a => a.id === req.fixedAssetId);
           if (asset) {
               const updatedAsset = { ...asset, location: newLocation };
-              await supabase.from('fixed_assets').upsert(updatedAsset);
+              await apiClient.fixedAssets.upsert(updatedAsset);
               setFixedAssets(prev => prev.map(a => a.id === asset.id ? updatedAsset : a));
               
               handleAddNotification({
@@ -913,8 +938,8 @@ function App() {
                   name: asset.name
               };
               // Save to Trash, Delete from Active
-              await supabase.from('recycle_bin').insert(trashItem);
-              await supabase.from('fixed_assets').delete().match({id: asset.id});
+              await apiClient.recycleBin.create(trashItem);
+              await apiClient.fixedAssets.remove({id: asset.id});
 
               setTrashItems(prev => [trashItem, ...prev]);
               setFixedAssets(prev => prev.filter(a => a.id !== asset.id));
@@ -958,7 +983,7 @@ function App() {
       if (!req) return;
       
       const updatedReq = { ...req, status: RequestStatus.ORDERED };
-      await supabase.from('requests').upsert(updatedReq);
+      await apiClient.requests.upsert(updatedReq);
       setRequests(prev => prev.map(r => r.id === id ? updatedReq : r));
       showToast('Purchase Order Generated. Waiting for Delivery.');
   };
@@ -968,7 +993,7 @@ function App() {
       if (!req) return;
       
       const updatedReq = { ...req, status: RequestStatus.STOCKED };
-      await supabase.from('requests').upsert(updatedReq);
+      await apiClient.requests.upsert(updatedReq);
       setRequests(prev => prev.map(r => r.id === id ? updatedReq : r));
       
       await handleAutoStock(req);
@@ -990,13 +1015,13 @@ function App() {
           ownerId: role === Role.TEACHER ? selectedClass : 'ADMIN',
       } as CalendarEvent;
       
-      await supabase.from('calendar_events').insert(newEvent);
+      await apiClient.calendar.create(newEvent);
       setEvents(prev => [...prev, newEvent]);
       showToast('Event Added');
   };
   
   const handleUpdateEvent = async (event: CalendarEvent) => {
-      await supabase.from('calendar_events').upsert(event);
+      await apiClient.calendar.upsert(event);
       setEvents(prev => prev.map(e => e.id === event.id ? event : e));
       showToast('Event Updated');
   };
@@ -1008,25 +1033,25 @@ function App() {
           createdBy: 'Admin',
           createdAt: new Date().toISOString()
       } as Notification;
-      await supabase.from('notifications').insert(newNote);
+      await apiClient.notifications.create(newNote);
       setNotifications(prev => [newNote, ...prev]);
       showToast('Notification Sent');
   };
 
   const handleUpdateNotification = async (id: string, newMessage: string) => {
-      await supabase.from('notifications').update({ message: newMessage }).match({ id });
+      await apiClient.notifications.update({ id }, { message: newMessage } as Partial<Notification>);
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, message: newMessage } : n));
       showToast('Notification Updated');
   };
 
   const handleDeleteNotification = async (id: string) => {
-      await supabase.from('notifications').delete().match({ id });
+      await apiClient.notifications.remove({ id });
       setNotifications(prev => prev.filter(n => n.id !== id));
       showToast('Notification Deleted');
   };
 
   const handleDeleteEvent = async (id: string) => {
-      await supabase.from('calendar_events').delete().match({ id });
+      await apiClient.calendar.remove({ id });
       setEvents(prev => prev.filter(e => e.id !== id));
       showToast('Event Deleted');
   }
@@ -1035,7 +1060,7 @@ function App() {
       const evt = events.find(e => e.id === id);
       if (!evt) return;
       const updated = { ...evt, isCompleted: !evt.isCompleted };
-      await supabase.from('calendar_events').upsert(updated);
+      await apiClient.calendar.upsert(updated);
       setEvents(prev => prev.map(e => e.id === id ? updated : e));
   };
 
@@ -1073,13 +1098,13 @@ function App() {
           // Check if exists logic omitted for brevity, Supabase upsert works if we had PK
           // Assuming upsert based on composite key or managing ID inside ConsumptionEditor
           // For now, we delete for this month/class and insert.
-          await supabase.from('consumptions').delete().match({ className: rec.className, month: rec.month });
-          await supabase.from('consumptions').insert(rec);
+          await apiClient.consumptions.remove({ className: rec.className, month: rec.month } as any);
+          await apiClient.consumptions.create(rec);
       }
 
       // Update Inventory Levels
       for (const item of newInventory) {
-          await supabase.from('inventory').upsert(item);
+          await apiClient.inventory.upsert(item);
       }
 
       setInventory(newInventory);
@@ -1121,8 +1146,22 @@ function App() {
               name: name
           };
           
-          await supabase.from('recycle_bin').insert(trashItem);
-          await supabase.from(tableName).delete().match({ id });
+          await apiClient.recycleBin.create(trashItem);
+
+          const deleteMap: Record<string, (criteria: any) => Promise<any>> = {
+              contracts: (criteria) => apiClient.contracts.remove(criteria),
+              school_files: (criteria) => apiClient.files.remove(criteria),
+              students: (criteria) => apiClient.students.remove(criteria),
+              teachers: (criteria) => apiClient.teachers.remove(criteria),
+              fixed_assets: (criteria) => apiClient.fixedAssets.remove(criteria),
+              inventory: (criteria) => apiClient.inventory.remove(criteria),
+          };
+          const deleteFn = deleteMap[tableName];
+          if (deleteFn) {
+              await deleteFn({ id });
+          } else {
+              console.warn(`No delete map for table ${tableName}`);
+          }
 
           setTrashItems(current => [trashItem, ...current]);
           listSetter(prev => prev.filter((i: any) => i.id !== id));
@@ -1161,33 +1200,33 @@ function App() {
 
   const handleRestoreItem = async (item: TrashItem) => {
       // Delete from Trash
-      await supabase.from('recycle_bin').delete().match({ id: item.id });
+      await apiClient.recycleBin.remove({ id: item.id });
       setTrashItems(prev => prev.filter(i => i.id !== item.id));
 
       // Re-insert into original table
       switch (item.type) {
           case TrashType.CONTRACT:
-              await supabase.from('contracts').insert(item.originalData);
+              await apiClient.contracts.create(item.originalData);
               setContracts(prev => [...prev, item.originalData]);
               break;
           case TrashType.FILE:
-              await supabase.from('school_files').insert(item.originalData);
+              await apiClient.files.create(item.originalData);
               setArchiveFiles(prev => [...prev, item.originalData]);
               break;
           case TrashType.STUDENT:
-              await supabase.from('students').insert(item.originalData);
+              await apiClient.students.create(item.originalData);
               setStudents(prev => [...prev, item.originalData]);
               break;
           case TrashType.TEACHER:
-              await supabase.from('teachers').insert(item.originalData);
+              await apiClient.teachers.create(item.originalData);
               setTeachers(prev => [...prev, item.originalData]);
               break;
           case TrashType.ASSET:
-              await supabase.from('fixed_assets').insert(item.originalData);
+              await apiClient.fixedAssets.create(item.originalData);
               setFixedAssets(prev => [...prev, item.originalData]);
               break;
           case TrashType.INVENTORY_ITEM:
-              await supabase.from('inventory').insert(item.originalData);
+              await apiClient.inventory.create(item.originalData);
               setInventory(prev => [...prev, item.originalData]);
               break;
       }
@@ -1195,7 +1234,7 @@ function App() {
   };
 
   const handlePermanentDelete = async (id: string) => {
-      await supabase.from('recycle_bin').delete().match({ id });
+      await apiClient.recycleBin.remove({ id });
       setTrashItems(prev => prev.filter(i => i.id !== id));
       showToast('Permanently Deleted');
   };
@@ -1242,11 +1281,11 @@ function App() {
       // 1. Update User State
       if (role === 'TEACHER') {
           const updatedTeacher = { ...user, status: finalStatus };
-          await supabase.from('teachers').upsert(updatedTeacher);
+          await apiClient.teachers.upsert(updatedTeacher);
           setTeachers(prev => prev.map(t => t.id === user.id ? updatedTeacher : t));
       } else {
           const updatedStudent = { ...user, status: finalStatus, absenceReason: note };
-          await supabase.from('students').upsert(updatedStudent);
+          await apiClient.students.upsert(updatedStudent);
           setStudents(prev => prev.map(s => s.id === user.id ? updatedStudent : s));
       }
 
@@ -1263,7 +1302,7 @@ function App() {
           note: note
       };
 
-      await supabase.from('attendance_logs').insert(logEntry);
+      await apiClient.attendance.create(logEntry);
       setAttendanceLogs(prev => [logEntry, ...prev]);
 
       setShowAttendanceModal(false);
@@ -1842,7 +1881,7 @@ function App() {
       <SchoolArchives 
         contracts={contracts}
         onSaveContract={async (c) => {
-            await supabase.from('contracts').upsert(c);
+            await apiClient.contracts.upsert(c);
             setContracts(prev => {
                 const idx = prev.findIndex(item => item.id === c.id);
                 if (idx > -1) {
@@ -1857,7 +1896,7 @@ function App() {
         onDeleteContract={handleDeleteContract}
         files={archiveFiles}
         onSaveFile={async (f) => {
-            await supabase.from('school_files').upsert(f);
+            await apiClient.files.upsert(f);
             setArchiveFiles(prev => [...prev, f]);
             showToast('文件上传成功 (File Uploaded)');
         }}
